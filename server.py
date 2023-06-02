@@ -2,49 +2,20 @@ import socket
 import ssl
 import json
 
-def start_tls_server(host, port, certfile, keyfile):
-    # Create a socket
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+host = "localhost"
+port = 12345
+certfile = "localhost.crt"  # Path to your server certificate file
+keyfile = "localhost.key"  # Path to your server private key file
 
-    # Enable reuse address/port to avoid "Address already in use" errors
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+context.load_verify_locations(certfile)
+context.load_cert_chain(certfile = certfile, keyfile = keyfile)
 
-    # Bind the socket to the specified host and port
-    server_socket.bind((host, port))
-
-    # Listen for incoming connections
-    server_socket.listen(1)
-
-    print(f"Server started on {host}:{port}")
-
-    while True:
-        try:
-            # Accept a client connection
-            client_socket, client_address = server_socket.accept()
-            print(f"Client connected: {client_address}")
-
-            # Wrap the socket with SSL/TLS encryption
-            context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-            context.load_cert_chain(certfile, keyfile)
-            client_socket = context.wrap_socket(client_socket, server_side=True)
-
-            # Handle client requests
-            handle_client(client_socket)
-
-            # Close the client connection
-            client_socket.close()
-
-        except KeyboardInterrupt:
-            break
-
-    # Close the server socket
-    server_socket.close()
-    print("Server stopped")
+context.check_hostname = False
 
 
-def handle_client(client_socket):
+def handle_client(data):
     # Receive data from the client
-    data = client_socket.recv(1024).decode("utf-8")
     http = data.split("/")[0]
 
     print(f'REQUEST:{http}')
@@ -57,23 +28,43 @@ def handle_client(client_socket):
         with open('database.json', 'w') as outfile:
             json.dump(jsonData, outfile)
 
-        response = "Data save with success"
-        client_socket.sendall(response.encode("utf-8"))
+        response = "RECEBI ESSE CARALHO!!!"
     
     if (http == "GET"):
         with open('database.json') as json_file:
             data = json.load(json_file)    
 
         response = data
-        client_socket.sendall(response.encode("utf-8"))
+    
+    return response
 
 
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Cria um socket TCP
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Define as opções do socket
+    sock.bind((host, port))  # Associa o socket ao endereço IP e porta especificados
 
-# Example usage
+    print(f"Listening on port {port}...")
+    sock.listen()  # Aguarda por conexões de entrada
+
+
+    sock = context.wrap_socket(sock, server_side = True)
+    conn, addr = sock.accept()  # Aceita uma conexão de um cliente
+
+    with conn:
+            print(f"Server {port} connected to client on socket {addr}")
+            while True:
+                data = conn.recv(1024)  # Recebe dados do cliente (máximo de BUFFER_SIZE bytes)
+                data = data.decode("utf-8")  # Decodifica os dados recebidos de bytes para string
+                if not data:
+                    sock.close()  # Fecha o socket
+                    print("NO connection. Finishing...")
+                    print("No connection received. Closing.") 
+                    break
+
+                print(f"Received request {data}")
+                response = handle_client(data)
+                conn.sendall(response.encode("utf-8"))  # Envia a resposta de volta para o cliente
+
 if __name__ == "__main__":
-    host = "localhost"
-    port = 12345
-    certfile = "localhost.crt"  # Path to your server certificate file
-    keyfile = "localhost.key"  # Path to your server private key file
-
-    start_tls_server(host, port, certfile, keyfile)
+    main()

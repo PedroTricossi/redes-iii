@@ -6,44 +6,50 @@ dados = {
     'nome':'pedro'
 }
 
-def start_tls_client(host, port):
-    # Create a socket
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+host = "localhost"
+port = 12346
+certfile = "localhost.crt"  # Path to your server certificate file
+keyfile = "localhost.key"  # Path to your server private key file
 
-    # Wrap the socket with SSL/TLS encryption
-    context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-    context.check_hostname = False  # Disable hostname verification
-    context.verify_mode = ssl.CERT_NONE  # Disable certificate verification
-    client_socket = context.wrap_socket(client_socket, server_hostname=host)
+context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+context.load_verify_locations(certfile)
+context.load_cert_chain(certfile = certfile, keyfile = keyfile)
 
-    # Connect to the server
-    client_socket.connect((host, port))
-    print(f"Connected to server: {host}:{port}")
+def main():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 
-    # Send data to the server
-    message = f'POST/{dados}'
-    client_socket.sendall(message.encode("utf-8"))
+        sock = context.wrap_socket(sock, server_hostname = host)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    # Receive response from the server
-    response = client_socket.recv(1024).decode("utf-8")
-    print(f"Server response: {response}")
+        # Tenta se conectar ao servidor
+        try:
+            sock.connect((host, port))
+        except ConnectionRefusedError:
+            sock.close()
+            print(f"Error: Could not connect to server server")
+            exit()
+        
+        print(f"Connected to server on port {port}...")
 
-    # time.sleep(3)
+        # Loop principal do cliente
+        while True:
+            message = f'POST/{dados}'
+            data = message.encode('UTF-8')  # Codifica os dados
 
-    # message = f'GET/'
-    # client_socket.sendall(message.encode("utf-8"))
+            sock.sendall(data)  # Envia os dados codificados pelo socket
 
-    # # Receive response from the server
-    # response = client_socket.recv(1024).decode("utf-8")
-    # print(f"Server response: {response}")
+            sock.settimeout(1.0)  # Timeout de 1 segundo
 
-    # Close the client socket
-    client_socket.close()
+            # Espera pela resposta do servidor
+            try:
+                data = sock.recv(1024)  # Recebe os dados do servidor (buffer de BUFFER_SIZE bytes)
+                data = data.decode("utf-8")  # Decodifica os dados
+                print(f"RESPOSTA: {data}")
+            except socket.timeout:
+                print("No data was received from server, timeout.")
+                print("Server timeout.")
+            except:
+                sock.close()
 
-
-# Example usage
-if __name__ == "__main__":
-    host = "localhost"
-    port = 12345
-
-    start_tls_client(host, port)
+if __name__ == '__main__':
+    main()
