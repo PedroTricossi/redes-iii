@@ -7,8 +7,13 @@ port = 12345
 certfile = "localhost.crt"  # Path to your server certificate file
 keyfile = "localhost.key"  # Path to your server private key file
 
+# SSL/TLS configuration for client authentication
 context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+
+# Load the CA certificates for client certificate verification
 context.load_verify_locations(certfile)
+
+# Load the server's certificate and private key
 context.load_cert_chain(certfile=certfile, keyfile=keyfile)
 
 def handle_client(data):
