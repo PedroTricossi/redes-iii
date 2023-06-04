@@ -32,21 +32,7 @@ def hexdump(package):
         print(f"{n:08x}: {s1:<48}  {s2}")
         n += 16
 
-def tls_handshake():
-    for i in [1, 2]:
-        package = client_conn.recv(1024)  # Recebe dados do cliente
-        server.sendall(package)  # Envia os dados recebidos para o servidor
-
-        package = server.recv(1024)  # Recebe dados do servidor
-        client_conn.sendall(package)  # Envia os dados recebidos para o cliente
-
-        package = server.recv(1024)  # Recebe dados do servidor
-        client_conn.sendall(package)  # Envia os dados recebidos para o cliente
-    print("Handshake do TLS concluído.")
-
 def main():
-
-    # tls_handshake()
 
     while True:
 
