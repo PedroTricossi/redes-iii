@@ -4,7 +4,7 @@ import json
 import sys
 
 host = "localhost"
-port = 12345
+port = 12346
 certfile = "localhost.crt"  # Path to your server certificate file
 keyfile = "localhost.key"  # Path to your server private key file
 
@@ -35,7 +35,7 @@ def main():
         # Loop principal do cliente
         while True:
             # Read user input from stdin
-            user_input = input("Enter request (e.g., POST/nome/pedro): ")
+            user_input = input("Enter request (e.g., POST/nome/sobrenome): ")
 
             if user_input.lower() == "exit":
                 break
